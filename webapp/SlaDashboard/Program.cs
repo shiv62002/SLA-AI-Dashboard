@@ -106,6 +106,17 @@ app.MapGet("/api/ai/summary", async (IHttpClientFactory http) =>
   return Results.Content(json, "application/json");
 });
 
+// Per-DC AI summary proxy -> FastAPI /summarize?dcId=...
+app.MapGet("/api/ai/summary/{dcId}", async (IHttpClientFactory http, string dcId) =>
+{
+    var client = http.CreateClient("ai");
+    using var res = await client.GetAsync($"/summarize?dcId={Uri.EscapeDataString(dcId)}");
+    res.EnsureSuccessStatusCode();
+    var json = await res.Content.ReadAsStringAsync();
+    return Results.Content(json, "application/json");
+});
+
+
 // Heatmap aggregation by DC (open tickets only)
 app.MapGet("/api/tickets/heatmap", async (AppDb db) =>
 {
@@ -134,6 +145,46 @@ app.MapGet("/api/tickets/heatmap", async (AppDb db) =>
 
     return Results.Ok(groups);
 });
+
+// Get open tickets for a specific data center (EF-safe)
+app.MapGet("/api/tickets/by-dc/{dcId}", async (AppDb db, string dcId) =>
+{
+    var today = DateTime.UtcNow.Date;
+
+    // 1) Pull raw rows first (translatable to SQL)
+    var rows = await db.Tickets
+        .Where(t => t.Status == "Open" && t.DcId == dcId)
+        .Select(t => new
+        {
+            t.TicketId,
+            t.DcId,
+            t.DocCategory,
+            t.Owner,
+            t.Status,
+            t.Priority,
+            t.DueDate
+        })
+        .ToListAsync();
+
+    // 2) Compute & order in memory (EF can't translate the date diff safely)
+    var shaped = rows
+        .Select(t => new
+        {
+            t.TicketId,
+            t.DcId,
+            t.DocCategory,
+            t.Owner,
+            t.Status,
+            t.Priority,
+            DueInDays = (int)(t.DueDate.Date - today).TotalDays
+        })
+        .OrderBy(x => x.DueInDays)
+        .ToList();
+
+    return Results.Ok(shaped);
+});
+
+
 
 
 app.MapRazorPages();

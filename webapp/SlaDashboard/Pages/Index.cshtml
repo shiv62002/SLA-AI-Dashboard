@@ -18,26 +18,6 @@
     style="display:inline-block; padding:10px 14px; background:#0a7; color:white; border-radius:8px; text-decoration:none;">View
     Tickets →</a>
 
-  <!-- KPI tiles -->
-  <div id="kpis" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px;">
-    <div style="padding:16px;border:1px solid #eee;border-radius:10px;background:#fafafa;">
-      <div>Open</div>
-      <div id="kpi-open" style="font-size:28px;font-weight:700;">—</div>
-    </div>
-    <div style="padding:16px;border:1px solid #eee;border-radius:10px;background:#fafafa;">
-      <div>Due ≤ 21d</div>
-      <div id="kpi-21" style="font-size:28px;font-weight:700;">—</div>
-    </div>
-    <div style="padding:16px;border:1px solid #eee;border-radius:10px;background:#fafafa;">
-      <div>Due ≤ 7d</div>
-      <div id="kpi-7" style="font-size:28px;font-weight:700;">—</div>
-    </div>
-    <div style="padding:16px;border:1px solid #eee;border-radius:10px;background:#fafafa;">
-      <div>Overdue</div>
-      <div id="kpi-od" style="font-size:28px;font-weight:700;color:#b00020;">—</div>
-    </div>
-  </div>
-
   <!-- AI Executive Summary card -->
   <div id="ai-card" style="margin-top:20px;padding:16px;border:1px solid #eee;border-radius:10px;background:#f6fbff;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -140,35 +120,39 @@
 
 
 <script>
-  // ---- KPIs + top-level AI summary ----
   async function loadKpis() {
     try {
       const r = await fetch('/api/kpi/summary');
-      const j = await r.json();
-      // Big tiles (card-style)
-      const card = (label, value) => `
-        <div style="display:flex; flex-direction:column;">
-          <span style="font-size:13px; color:#555">${label}</span>
-          <strong style="font-size:28px;">${value}</strong>
-        </div>`;
-      document.getElementById('kpi-open').innerHTML = card('Open Tickets', j.open ?? '—');
-      document.getElementById('kpi-21').innerHTML = card('Due ≤ 21 days', j.dueIn21 ?? '—');
-      document.getElementById('kpi-7').innerHTML = card('Due ≤ 7 days', j.dueIn7 ?? '—');
-      document.getElementById('kpi-overdue').innerHTML = card('Overdue', j.overdue ?? '—');
+      const k = await r.json();
 
-      // Small number tiles
-      document.getElementById('kpi-open').textContent = j.open ?? '—';
-      document.getElementById('kpi-21').textContent = j.dueIn21 ?? '—';
-      document.getElementById('kpi-7').textContent = j.dueIn7 ?? '—';
+      const card = (label, value) => `
+      <div style="display:flex; flex-direction:column;">
+        <span style="font-size:13px; color:#555">${label}</span>
+        <strong style="font-size:28px;">${value ?? '—'}</strong>
+      </div>`;
+
+      const setCard = (id, label, value) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = card(label, value);
+      };
+
+      setCard('kpi-open', 'Open Tickets', k.open);
+      setCard('kpi-21', 'Due ≤ 21 days', k.dueIn21);
+      setCard('kpi-7', 'Due ≤ 7 days', k.dueIn7);
+      setCard('kpi-overdue', 'Overdue', k.overdue);
+
+      // If an older tile with id "kpi-od" still exists, keep it in sync:
       const od = document.getElementById('kpi-od');
-      if (od) od.textContent = j.overdue ?? '—';
-    } catch {
-      ['kpi-open', 'kpi-21', 'kpi-7', 'kpi-od'].forEach(id => {
+      if (od) od.textContent = k.overdue ?? '—';
+    } catch (e) {
+      console.error('Error loading KPIs:', e);
+      ['kpi-open', 'kpi-21', 'kpi-7', 'kpi-overdue', 'kpi-od'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = 'ERR';
       });
     }
   }
+
 
   async function loadSummary() {
     try {
