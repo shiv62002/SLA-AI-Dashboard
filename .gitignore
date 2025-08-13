@@ -19,3 +19,5 @@ node_modules/
 # Env
 .env
 ai/.env
+ai/.env
+ai/.venv/
