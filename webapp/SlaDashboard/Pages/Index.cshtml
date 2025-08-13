@@ -15,6 +15,52 @@
   </div>
 
   <a href="/Tickets" style="display:inline-block; padding:10px 14px; background:#0a7; color:white; border-radius:8px; text-decoration:none;">View Tickets →</a>
+
+  <!-- KPI tiles -->
+<div id="kpis" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px;">
+  <div style="padding:16px;border:1px solid #eee;border-radius:10px;background:#fafafa;"><div>Open</div><div id="kpi-open" style="font-size:28px;font-weight:700;">—</div></div>
+  <div style="padding:16px;border:1px solid #eee;border-radius:10px;background:#fafafa;"><div>Due ≤ 21d</div><div id="kpi-21" style="font-size:28px;font-weight:700;">—</div></div>
+  <div style="padding:16px;border:1px solid #eee;border-radius:10px;background:#fafafa;"><div>Due ≤ 7d</div><div id="kpi-7" style="font-size:28px;font-weight:700;">—</div></div>
+  <div style="padding:16px;border:1px solid #eee;border-radius:10px;background:#fafafa;"><div>Overdue</div><div id="kpi-od" style="font-size:28px;font-weight:700;color:#b00020;">—</div></div>
+</div>
+
+<!-- AI Executive Summary card -->
+<div id="ai-card" style="margin-top:20px;padding:16px;border:1px solid #eee;border-radius:10px;background:#f6fbff;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <h2 style="margin:0;">AI Executive Summary</h2>
+    <button id="refresh-summary" style="padding:8px 12px;border:none;border-radius:8px;background:#0369a1;color:#fff;cursor:pointer;">
+      Refresh
+    </button>
+  </div>
+  <pre id="ai-summary" style="white-space:pre-wrap;font-family:system-ui, -apple-system, Segoe UI, Roboto;margin-top:12px;">Loading...</pre>
+</div>
+
+<!-- Tickets Heatmap -->
+<div style="margin-top:20px;">
+  <h2 style="margin:0 0 8px 0;">Tickets Heatmap by Data Center</h2>
+  <div style="font-size:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;">
+    <span><b>Legend:</b></span>
+    <span style="padding:4px 8px;background:#fee2e2;border:1px solid #fecaca;border-radius:6px;">Overdue (&lt;0d)</span>
+    <span style="padding:4px 8px;background:#fef9c3;border:1px solid #fde68a;border-radius:6px;">≤ 7d</span>
+    <span style="padding:4px 8px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;">8–21d</span>
+    <span style="padding:4px 8px;background:#dcfce7;border:1px solid #bbf7d0;border-radius:6px;">&gt; 21d</span>
+  </div>
+
+  <table id="heatmap" style="width:100%;border-collapse:separate;border-spacing:0 8px;">
+    <thead>
+      <tr style="text-align:left;">
+        <th style="padding:8px;">Data Center</th>
+        <th style="padding:8px;">Overdue</th>
+        <th style="padding:8px;">≤ 7d</th>
+        <th style="padding:8px;">8–21d</th>
+        <th style="padding:8px;">&gt; 21d</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+
 </div>
 
 <script>
@@ -34,3 +80,66 @@
   document.getElementById('kpi-overdue').innerHTML = card('Overdue',       k.overdue);
 })();
 </script>
+
+<script>
+async function loadKpis(){
+  try {
+    const r = await fetch('/api/kpi/summary');
+    const j = await r.json();
+    document.getElementById('kpi-open').textContent = j.open ?? '—';
+    document.getElementById('kpi-21').textContent = j.dueIn21 ?? '—';
+    document.getElementById('kpi-7').textContent  = j.dueIn7 ?? '—';
+    document.getElementById('kpi-od').textContent = j.overdue ?? '—';
+  } catch {
+    ['kpi-open','kpi-21','kpi-7','kpi-od'].forEach(id => document.getElementById(id).textContent = 'ERR');
+  }
+}
+
+async function loadSummary(){
+  try {
+    const r = await fetch('/api/ai/summary');
+    const j = await r.json();
+    document.getElementById('ai-summary').textContent = j.summary || 'No summary available.';
+  } catch (e) {
+    document.getElementById('ai-summary').textContent = 'Error loading summary.';
+  }
+}
+
+document.getElementById('refresh-summary').addEventListener('click', loadSummary);
+loadKpis();
+loadSummary();
+</script>
+
+<script>
+async function loadHeatmap(){
+  const tbody = document.querySelector('#heatmap tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="padding:8px;color:#666;">Loading…</td></tr>';
+  try {
+    const r = await fetch('/api/tickets/heatmap');
+    const rows = await r.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:8px;color:#666;">No open tickets.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(x => {
+      const chip = (val, bg, bd) =>
+        `<span style="display:inline-block;min-width:36px;text-align:center;padding:6px 10px;background:${bg};border:1px solid ${bd};border-radius:10px;font-weight:600;">${val}</span>`;
+      return `
+        <tr>
+          <td style="padding:8px;font-weight:600;">${x.dcId}</td>
+          <td style="padding:8px;">${chip(x.overdue, '#fee2e2', '#fecaca')}</td>
+          <td style="padding:8px;">${chip(x.due7,    '#fef9c3', '#fde68a')}</td>
+          <td style="padding:8px;">${chip(x.due21,   '#fffbeb', '#fde68a')}</td>
+          <td style="padding:8px;">${chip(x.ok,      '#dcfce7', '#bbf7d0')}</td>
+        </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:8px;color:#b00020;">Error loading heatmap.</td></tr>';
+  }
+}
+
+// make sure these run on page load (alongside your other loaders)
+loadHeatmap();
+</script>
+
+

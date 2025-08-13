@@ -8,6 +8,8 @@ builder.Services.AddDbContext<AppDb>(opt =>
   opt.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=sla.db"));
 
 builder.Services.AddRazorPages();
+var aiBase = Environment.GetEnvironmentVariable("AI_BASE") ?? "http://localhost:8001";
+builder.Services.AddHttpClient("ai", c => c.BaseAddress = new Uri(aiBase));
 
 var app = builder.Build();
 
@@ -66,22 +68,73 @@ app.MapGet("/api/tickets", async (AppDb db, string? status, string? dc, string? 
 // Endpoint tailored for Power Automate reminders
 app.MapGet("/api/reminders", async (AppDb db) =>
 {
+  var today = DateTime.UtcNow.Date;
+
+  var items = await db.Tickets
+    .Where(t => t.Status == "Open")
+    .Select(t => new
+    {
+      t.TicketId,
+      t.DcId,
+      t.DocCategory,
+      t.Owner,
+      t.Priority,
+      t.DueDate
+    })
+    .ToListAsync();
+
+  var shaped = items.Select(t => new
+  {
+    t.TicketId,
+    t.DcId,
+    t.DocCategory,
+    t.Owner,
+    t.Priority,
+    t.DueDate,
+    DaysToDue = (int)(t.DueDate.Date - today).TotalDays
+  });
+
+  return Results.Ok(shaped);
+});
+
+app.MapGet("/api/ai/summary", async (IHttpClientFactory http) =>
+{
+  var client = http.CreateClient("ai");
+  using var res = await client.GetAsync("/summarize");
+  res.EnsureSuccessStatusCode();
+  var json = await res.Content.ReadAsStringAsync();
+  return Results.Content(json, "application/json");
+});
+
+// Heatmap aggregation by DC (open tickets only)
+app.MapGet("/api/tickets/heatmap", async (AppDb db) =>
+{
     var today = DateTime.UtcNow.Date;
 
     var items = await db.Tickets
-      .Where(t => t.Status == "Open")
-      .Select(t => new {
-        t.TicketId, t.DcId, t.DocCategory, t.Owner, t.Priority, t.DueDate
-      })
-      .ToListAsync();
+        .Where(t => t.Status == "Open")
+        .Select(t => new
+        {
+            t.DcId,
+            Days = (int)(t.DueDate.Date - today).TotalDays
+        })
+        .ToListAsync();
 
-    var shaped = items.Select(t => new {
-      t.TicketId, t.DcId, t.DocCategory, t.Owner, t.Priority, t.DueDate,
-      DaysToDue = (int)(t.DueDate.Date - today).TotalDays
-    });
+    var groups = items
+        .GroupBy(x => x.DcId)
+        .Select(g => new
+        {
+            dcId = g.Key,
+            overdue = g.Count(x => x.Days < 0),
+            due7    = g.Count(x => x.Days >= 0 && x.Days <= 7),
+            due21   = g.Count(x => x.Days >= 8 && x.Days <= 21),
+            ok      = g.Count(x => x.Days > 21)
+        })
+        .OrderBy(x => x.dcId);
 
-    return Results.Ok(shaped);
+    return Results.Ok(groups);
 });
+
 
 app.MapRazorPages();
 
@@ -90,6 +143,5 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
-app.MapFallbackToPage("/Index");
 
 app.Run();
