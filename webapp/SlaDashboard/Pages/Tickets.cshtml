@@ -1,0 +1,78 @@
+@page
+@model TicketsModel
+@{
+    ViewData["Title"] = "Tickets";
+}
+<div style="font-family:system-ui, -apple-system, Segoe UI, Roboto; padding:24px; max-width:1200px; margin:0 auto;">
+  <h1 style="margin-bottom:16px;">Tickets</h1>
+
+  <div style="display:flex; gap:12px; align-items:flex-end; margin-bottom:16px;">
+    <div>
+      <label>Status</label><br/>
+      <select id="status" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+        <option value="">Any</option>
+        <option value="Open" selected>Open</option>
+        <option value="Closed">Closed</option>
+      </select>
+    </div>
+    <div>
+      <label>Datacenter</label><br/>
+      <input id="dc" placeholder="e.g. DC-VA-02" style="padding:8px; border-radius:6px; border:1px solid #ccc;"/>
+    </div>
+    <div>
+      <label>Category</label><br/>
+      <input id="category" placeholder="e.g. Networking" style="padding:8px; border-radius:6px; border:1px solid #ccc;"/>
+    </div>
+    <button id="apply" style="padding:10px 14px; border-radius:8px; background:#0a7; color:white; border:none; cursor:pointer;">Apply</button>
+  </div>
+
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="background:#f7f7f7;">
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">Ticket</th>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">DC</th>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">Category</th>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">Owner</th>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">Priority</th>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">Due</th>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">Days To Due</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<script>
+async function load() {
+  const params = new URLSearchParams();
+  const status = document.getElementById('status').value;
+  const dc     = document.getElementById('dc').value.trim();
+  const cat    = document.getElementById('category').value.trim();
+  if (status) params.set('status', status);
+  if (dc)     params.set('dc', dc);
+  if (cat)    params.set('category', cat);
+
+  const res = await fetch('/api/tickets?' + params.toString());
+  const data = await res.json();
+
+  const fmt = (s) => new Date(s).toISOString().slice(0,10);
+  const badge = (p) => {
+    const color = p==='High' ? '#ff4d4f' : (p==='Medium' ? '#faad14' : '#52c41a');
+    return `<span style="background:${color}22;color:${color};padding:4px 8px;border-radius:999px;">${p}</span>`;
+  }
+
+  document.getElementById('rows').innerHTML = data.map(t => `
+    <tr>
+      <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${t.ticketId}</td>
+      <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${t.dcId}</td>
+      <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${t.docCategory}</td>
+      <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${t.owner}</td>
+      <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${badge(t.priority)}</td>
+      <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${fmt(t.dueDate)}</td>
+      <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${t.daysToDue}</td>
+    </tr>`).join('');
+}
+
+document.getElementById('apply').addEventListener('click', load);
+window.addEventListener('DOMContentLoaded', load);
+</script>
