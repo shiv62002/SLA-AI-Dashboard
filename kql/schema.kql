@@ -1,0 +1,17 @@
+.create table Tickets (
+    ticket_id:string,
+    dc_id:string,
+    doc_category:string,
+    created_at:datetime,
+    due_date:datetime,
+    owner:string,
+    status:string,
+    priority:string
+)
+
+.create table Datacenters (
+    dc_id:string,
+    region:string,
+    area_sqft:int,
+    manager:string
+)

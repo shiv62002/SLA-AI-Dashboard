@@ -1,0 +1,5 @@
+sla_id,doc_category,days_before_ops_handover
+SLA-01,Networking,60
+SLA-02,Security,45
+SLA-03,Compliance,90
+SLA-04,PowerCooling,30

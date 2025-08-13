@@ -1,0 +1,22 @@
+// Open tickets by data center (for heatmap)
+Tickets
+| where status == "Open"
+| summarize OpenTickets = count() by dc_id
+| join kind=leftouter (Datacenters) on dc_id
+| project dc_id, region, area_sqft, OpenTickets
+
+// SLA risk: due in < 21 days or < 7 days
+let now_ = now();
+Tickets
+| where status == "Open"
+| extend days_to_due = datetime_diff('day', due_date, now_)
+| summarize 
+    DueIn7Days = countif(days_to_due <= 7 and days_to_due >= 0),
+    DueIn21Days = countif(days_to_due <= 21 and days_to_due >= 0),
+    Overdue = countif(days_to_due < 0)
+by dc_id
+
+// Trend: tickets by category weekly
+Tickets
+| summarize Count = count() by bin(created_at, 7d), doc_category
+| order by created_at asc
