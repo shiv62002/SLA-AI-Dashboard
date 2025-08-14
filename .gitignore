@@ -21,3 +21,24 @@ node_modules/
 ai/.env
 ai/.env
 ai/.venv/
+ai/.venv/
+__pycache__/
+*.pyc
+
+# Node/JS (if any)
+node_modules/
+
+# .NET build
+webapp/SlaDashboard/bin/
+webapp/SlaDashboard/obj/
+
+# Databases & local data
+*.db
+
+# Secrets / env
+*.env
+ai/.env
+webapp/.env
+
+# OS
+.DS_Store

@@ -1,19 +1,36 @@
-import os, requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+# agents/fetch_agent.py
+import os
+import requests
+from typing import List, Dict, Any, Optional
 
-WEBAPP = os.getenv("WEBAPP_BASE", "http://localhost:5168")
+WEBAPP_BASE = os.getenv("WEBAPP_BASE", "http://localhost:5168")
 
-_session = requests.Session()
-retry = Retry(total=4, backoff_factor=0.5, status_forcelist=[429, 502, 503, 504])
-_session.mount("http://", HTTPAdapter(max_retries=retry))
-_session.mount("https://", HTTPAdapter(max_retries=retry))
+def get_open_tickets(dc_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Pulls open tickets from the webapp API. Optionally filters by datacenter.
+    Normalizes key names to lowerCamelCase used by the AI layer.
+    """
+    params = {"status": "Open"}
+    if dc_id:
+        params["dc"] = dc_id  # maps to Program.cs /api/tickets?dc=...
 
-def get_open_tickets(timeout=15):
-    url = f"{WEBAPP}/api/tickets"
-    try:
-        r = _session.get(url, params={"status":"Open"}, timeout=timeout)
-        r.raise_for_status()
-        return r.json()
-    except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"Cannot reach web app at {url}. Is it running? ({e})")
+    url = f"{WEBAPP_BASE}/api/tickets"
+    r = requests.get(url, params=params, timeout=10)
+    r.raise_for_status()
+    items = r.json()
+
+    norm = []
+    for t in items:
+        # Normalize possible PascalCase from C# to lowerCamelCase
+        norm.append({
+            "ticketId":   t.get("ticketId")   or t.get("TicketId"),
+            "dcId":       t.get("dcId")       or t.get("DcId"),
+            "docCategory":t.get("docCategory")or t.get("DocCategory"),
+            "owner":      t.get("owner")      or t.get("Owner"),
+            "status":     t.get("status")     or t.get("Status"),
+            "priority":   t.get("priority")   or t.get("Priority"),
+            "createdAt":  t.get("createdAt")  or t.get("CreatedAt"),
+            "dueDate":    t.get("dueDate")    or t.get("DueDate"),
+            "daysToDue":  t.get("daysToDue")  or t.get("DaysToDue"),
+        })
+    return norm

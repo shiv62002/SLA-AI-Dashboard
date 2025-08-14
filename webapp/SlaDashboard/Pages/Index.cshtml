@@ -31,6 +31,8 @@
       style="white-space:pre-wrap;font-family:system-ui, -apple-system, Segoe UI, Roboto;margin-top:12px;">Loading...</pre>
   </div>
 
+  <div id="ai-suggestions" style="margin-top:8px;"></div>
+
   <!-- Tickets Heatmap -->
   <div style="margin-top:20px;padding:16px;border:1px solid #eee;border-radius:10px;background:#f6fbff;">
     <h2 style="margin:0 0 12px 0;">Tickets Heatmap by Data Center</h2>
@@ -158,12 +160,52 @@
     try {
       const r = await fetch('/api/ai/summary');
       const j = await r.json();
+
+      // Keep existing summary text
       document.getElementById('ai-summary').textContent = j.summary || 'No summary available.';
-    } catch {
+
+      // ---- NEW: suggestions rendering ----
+      const sug = j.suggestions || {};
+      const kb = Array.isArray(sug.kbSources)
+        ? sug.kbSources.map(s => `<code>${s}</code>`).join(', ')
+        : '—';
+
+      const global = (sug.globalTop3 || []).map(x => `
+      <li>
+        <b>${x.title}</b><br/>
+        <small>${x.why || ''}</small>
+        <ul>${(x.steps || []).map(s => `<li>${s}</li>`).join('')}</ul>
+      </li>`).join('');
+
+      const per = (sug.perTicket || []).slice(0, 4).map(s => `
+      <li>
+        <b>${s.ticketId}</b>${s.urgency ? ` — <i>${s.urgency}</i>` : ''}
+        ${s.rationale ? `<div>${s.rationale}</div>` : ''}
+        <ul>${(s.nextActions || []).map(a => `<li>${a}</li>`).join('')}</ul>
+        ${s.suggestedOwner ? `<div><small>Suggested owner: ${s.suggestedOwner}</small></div>` : ''}
+      </li>`).join('');
+
+      document.getElementById('ai-suggestions').innerHTML = `
+      <h3 style="margin:12px 0 6px;">AI Suggestions</h3>
+      <div style="font-size:13px;color:#555;margin-bottom:6px;">
+        KB sources: ${kb}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <h4 style="margin:0 0 6px;">Global Next Moves</h4>
+          <ol>${global || '<li>—</li>'}</ol>
+        </div>
+        <div>
+          <h4 style="margin:0 0 6px;">Per-Ticket Advice (top 4)</h4>
+          <ol>${per || '<li>—</li>'}</ol>
+        </div>
+      </div>`;
+    } catch (e) {
+      console.error(e);
       document.getElementById('ai-summary').textContent = 'Error loading summary.';
+      document.getElementById('ai-suggestions').textContent = '';
     }
   }
-
 
 
   // ---- Heatmap ----
