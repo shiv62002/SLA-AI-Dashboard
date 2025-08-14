@@ -8,8 +8,7 @@ Portfolio project demonstrating:
 ## Structure
 - `data/` sample CSVs
 - `kql/` ADX schema + queries
-- `webapp/` ASP.NET Core app (added in Phase 1)
-- `ai/` Python AI microservice (added in Phase 3)
-- `power-automate/` Flow export + notes
+- `webapp/` ASP.NET Core app 
+- `ai/` Python AI microservice 
 
 
