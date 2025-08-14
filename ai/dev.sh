@@ -8,5 +8,6 @@ fi
 source .venv/bin/activate
 # deps (idempotent)
 python -m pip install --upgrade pip >/dev/null
+pip install -q fastapi uvicorn requests python-dotenv openai chromadb pydantic
 # run
 uvicorn agents.main:app --reload --port 8001
