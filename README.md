@@ -6,10 +6,10 @@ It combines **Kusto Query Language (KQL)** for data extraction, **AI microservic
 
 ## Live Demo  
 <a href="./SLA_Dashboard.mp4">
-  <img src="https://img.shields.io/badge/Play-Demo-blue?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Download-Demo-blue?style=for-the-badge">
 </a>
 
-*(Click the badge above to watch the dashboard in action — hosted locally in the repo)*
+*(Click the link above to download the demo locally and watch it on your machine.)*
 
 ## Key Features  
 - **AI-Driven Insights:** Integrated OpenAI GPT API to generate contextual SLA summaries and actionable ticket suggestions.  
