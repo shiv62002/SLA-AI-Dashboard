@@ -4,8 +4,8 @@
 The SLA AI Dashboard aggregates SLA and ticketing data, analyzes it using AI, and displays performance insights through an interactive ASP.NET Core dashboard.  
 It combines **Kusto Query Language (KQL)** for data extraction, **AI microservices** for executive summaries and ticket suggestions, and **Power Automate** concepts for workflow automation.  
 
-## 🎥 Live Demo  
-<a href="./SLADashboard.mp4">
+## Live Demo  
+<a href="./SLA Dashboard.mp4">
   <img src="https://img.shields.io/badge/Play-Demo-blue?style=for-the-badge">
 </a>
 
