@@ -9,7 +9,7 @@ It combines **Kusto Query Language (KQL)** for data extraction, **AI microservic
   <img src="https://img.shields.io/badge/Download-Demo-blue?style=for-the-badge">
 </a>
 
-*(Click the link above to download the demo locally and watch it on your machine.)*
+*(Click the link above to download the demo locally and watch it on your machine)*
 
 ## Key Features  
 - **AI-Driven Insights:** Integrated OpenAI GPT API to generate contextual SLA summaries and actionable ticket suggestions.  
