@@ -4,6 +4,13 @@
 The SLA AI Dashboard aggregates SLA and ticketing data, analyzes it using AI, and displays performance insights through an interactive ASP.NET Core dashboard.  
 It combines **Kusto Query Language (KQL)** for data extraction, **AI microservices** for executive summaries and ticket suggestions, and **Power Automate** concepts for workflow automation.  
 
+## 🎥 Live Demo  
+<a href="./SLADashboard.mp4">
+  <img src="https://img.shields.io/badge/Play-Demo-blue?style=for-the-badge">
+</a>
+
+*(Click the badge above to watch the dashboard in action — hosted locally in the repo)*
+
 ## Key Features  
 - **AI-Driven Insights:** Integrated OpenAI GPT API to generate contextual SLA summaries and actionable ticket suggestions.  
 - **Full-Stack Integration:** ASP.NET Core Razor Pages frontend with C# backend linked to a Python FastAPI AI microservice.  
@@ -15,4 +22,4 @@ It combines **Kusto Query Language (KQL)** for data extraction, **AI microservic
 - **AI:** OpenAI GPT API, transformers, RAG  
 - **Backend:** FastAPI, ASP.NET Core  
 - **Data & Automation:** KQL, Power Automate, Azure DevOps  
-- **Version Control:** Git & GitHub  
+- **Version Control:** Git & GitHub
